@@ -1,3 +1,21 @@
 filename,is_valid_json,has_all_required_keys,key_accuracy,value_accuracy,notes
-doc_01.txt,FALSE,FALSE,0,0,Model added markdown fences and prose preamble.
-doc_02.txt,TRUE,FALSE,0.8,0.7,Missing the tax key.
+doc_01_starbucks.txt,TRUE,TRUE,1.0,1.0,Perfect extraction.
+doc_02_logistics.txt,TRUE,TRUE,1.0,1.0,Handled handwritten notes correctly.
+doc_03_apple.txt,TRUE,TRUE,1.0,1.0,Correctly separated invoice and due dates.
+doc_04_paris.txt,TRUE,TRUE,1.0,1.0,Handled Euro symbol and comma decimals.
+doc_05_walmart.txt,TRUE,TRUE,1.0,1.0,Successfully ignored OCR noise.
+doc_06_cash.txt,TRUE,FALSE,1.0,0.5,Hallucinated "YYYY-MM-DD" placeholder for missing date.
+doc_07_bestbuy.txt,TRUE,TRUE,1.0,1.0,Correctly distinguished subtotal from total and amount paid.
+doc_08_pizza.txt,TRUE,TRUE,1.0,1.0,Handled long vendor name.
+doc_09_sushi.txt,TRUE,TRUE,1.0,1.0,Correctly handled Japanese labels.
+doc_10_nike.txt,TRUE,TRUE,1.0,1.0,Correctly extracted final price after discount.
+doc_11_wholefoods.txt,TRUE,TRUE,1.0,1.0,Correctly extracted line item array.
+doc_12_diner.txt,TRUE,TRUE,1.0,1.0,Correctly identified suggested tip vs total.
+doc_13_kwikmart.txt,TRUE,TRUE,1.0,1.0,Separated address from vendor name correctly.
+doc_14_gas.txt,TRUE,TRUE,1.0,0.0,Arithmetic Error: Summed 40+10 to 60 instead of 50.
+doc_15_delivery.txt,TRUE,TRUE,1.0,1.0,Correctly converted date format to ISO.
+doc_16_plumbing.txt,TRUE,TRUE,1.0,1.0,Extracted service details and rates accurately.
+doc_17_amazon.txt,TRUE,TRUE,1.0,1.0,Correctly handled negative refund amount.
+doc_18_hilton.txt,TRUE,TRUE,1.0,1.0,Separated state vs city taxes correctly.
+doc_19_badmath.txt,TRUE,TRUE,1.0,1.0,Captured inconsistent stated total correctly.
+doc_20_mcdonalds.txt,TRUE,TRUE,1.0,1.0,Extracted data from simulated "messy" text.
