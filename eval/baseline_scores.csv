@@ -1,0 +1,3 @@
+filename,is_valid_json,has_all_required_keys,key_accuracy,value_accuracy,notes
+doc_01.txt,FALSE,FALSE,0,0,Model added markdown fences and prose preamble.
+doc_02.txt,TRUE,FALSE,0.8,0.7,Missing the tax key.
