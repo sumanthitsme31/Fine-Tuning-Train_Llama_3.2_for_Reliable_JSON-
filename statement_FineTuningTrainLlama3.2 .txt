@@ -1,0 +1,199 @@
+Structured Output Fine-Tuning: Train Llama 3.2 for Reliable JSON Extraction with LlamaFactory
+----------
+Objective
+You will fine-tune a Llama 3.2 model to reliably extract structured JSON data from unstructured business documents like invoices and purchase orders. You will learn parameter-efficient fine-tuning (LoRA) using the LlamaFactory web UI, master the critical skill of data curation for structured output, and conduct a rigorous before-and-after evaluation to measure the impact on parse success rate. This task mirrors a core challenge in enterprise AI: ensuring LLM outputs are consistently machine-parseable for integration into production data pipelines.
+---------
+Description
+Background Context & Industry Relevance
+Every enterprise that processes documents at scale — invoices, purchase orders, insurance claims, job applications, medical intake forms — has the same downstream problem: the data trapped inside those documents needs to reach a structured system (an ERP, a CRM, a database) before any business logic can act on it. Traditionally this meant manual data entry clerks, expensive OCR pipelines, or brittle rule-based parsers. LLMs have changed the calculus dramatically — they can read a messy, inconsistently formatted invoice and extract vendor name, date, line items, and total in one pass.
+
+The problem is reliability. A general-purpose LLM like Llama 3.2, when asked to extract invoice fields, will sometimes return clean JSON, sometimes wrap it in markdown code fences, sometimes add an explanation paragraph before the JSON, and sometimes return a completely different key structure depending on how the document is phrased. In a production pipeline, a single malformed response breaks the downstream parser and requires human intervention — exactly what the automation was meant to eliminate.
+
+This is the real engineering problem: not whether the model can extract the data, but whether it returns it in a consistent, machine-parseable format every single time. Companies like Hypatos (Germany), Rossum, and Nanonets have built multi-million dollar businesses on solving this exact reliability problem for document extraction. Their core insight — that fine-tuning on structured output examples dramatically outperforms prompt engineering alone for format consistency — is what this task validates.
+
+Fine-tuning on curated input-output pairs, where every output is a valid, consistently-keyed JSON object, trains the model to treat JSON formatting as a hard constraint rather than a stylistic preference. After fine-tuning, parse success rate — the fraction of responses that are valid JSON with the expected keys — becomes the single most important metric, because a 98% accurate but 70% parseable model is less useful in production than an 85% accurate but 99% parseable one.
+
+This task uses LlamaFactory's no-code Gradio web UI for fine-tuning and Open WebUI or LlamaFactory's inference tab for evaluation. No custom Python application is written. The intellectual challenge is entirely in data curation quality, JSONL schema design, evaluation methodology, and the analysis of failure cases.
+
+Concept Glossary
+Structured Output: Model output that conforms to a pre-defined machine-readable format — typically JSON with specific, fixed keys. Contrast with free-text output, which may be accurate but is unparseable by downstream systems without custom logic. "Structured" means the same keys appear in every response, in a consistent format, with no prose wrapping.
+
+JSON (JavaScript Object Notation): A lightweight, language-agnostic data interchange format using key-value pairs: {"vendor": "Tata Steel", "date": "2024-03-15", "total": 142500.00}. Machine-readable by any programming language. A valid JSON response can be parsed in one line; an invalid one requires error handling and often human review.
+
+Parse Success Rate: The percentage of model responses that are valid, parseable JSON containing all required keys with correct value types. Computed by attempting JSON.parse() (or Python's json.loads()) on each response and checking key presence. This is your primary before-vs-after metric. A model that returns beautifully accurate data inside a markdown code fence has a 0% parse success rate from an automation standpoint.
+
+JSONL (JSON Lines): A training data format where each line is one complete JSON object representing a single training example. For this task, each line has the structure: {"instruction": "Extract invoice fields as JSON.", "input": "<raw invoice text>", "output": "{\"vendor\": \"...\", \"date\": \"...\", \"total\": ..., \"line_items\": [...]}"}. You build this file manually — one line per curated example.
+
+Fine-Tuning: Continuing to train a pre-trained LLM on a small, domain-specific dataset to specialise its behaviour. Unlike prompting, which nudges the model at inference time, fine-tuning permanently updates model weights so the desired behaviour (returning valid JSON) becomes the model's default response pattern — not something it needs to be reminded of in every prompt.
+
+LoRA (Low-Rank Adaptation): A parameter-efficient fine-tuning method that freezes pre-trained model weights and inserts small trainable adapter matrices into the model's attention layers. Reduces trainable parameters by ~99%, enabling fine-tuning on a laptop CPU without a GPU. Configured in LlamaFactory via rank (adapter matrix size, typically 8–32 for this task), alpha (scaling factor), and learning rate.
+
+LlamaFactory: An open-source framework providing a Gradio web UI for fine-tuning open-source LLMs without writing training code. Load a model, upload your JSONL dataset, set hyperparameters via sliders and dropdowns, click Train, monitor the live loss curve, then evaluate using the built-in inference tab — all through a browser.
+
+SFT (Supervised Fine-Tuning): Training on input-output pairs where the correct output is explicitly provided. Here: input = raw invoice/document text, output = the exact JSON object you want the model to return. The model learns the mapping from unstructured text to your specific JSON schema.
+
+JSON Schema: A formal specification of the expected structure of a JSON object — which keys must be present, what data type each value must be, and whether any keys are optional. Example: {"vendor": string, "date": "YYYY-MM-DD", "total": float, "currency": string, "line_items": [{"description": string, "quantity": int, "unit_price": float}]}. Your fine-tuning dataset must be perfectly consistent with this schema across every training example.
+
+Training Loss Curve: A graph showing the model's prediction error decreasing over training steps. For structured output fine-tuning, a healthy curve descends steadily and levels off around epoch 2–3. If it drops to near-zero by epoch 1, you are likely overfitting — the model memorises your 60 examples rather than learning the general JSON formatting behaviour.
+
+Overfitting: The model memorises training examples instead of learning generalisable patterns. In this context: it returns correct JSON for invoices that look exactly like your training data but reverts to free-text for slightly differently formatted documents. Prevention: training data must have high format diversity (different layouts, column orders, missing fields), not just different content.
+
+Hallucination in Extraction Context: The model inventing field values not present in the source document — e.g., adding a "tax": 500 field when the invoice contains no tax information, or filling "vendor" with a plausible-sounding company name when the vendor field is illegible. More subtle than factual hallucination and harder to catch without ground truth comparison.
+
+Inference Tab (LlamaFactory): A built-in UI panel in LlamaFactory where you can load a model (base or fine-tuned) and query it interactively — no Python script needed. Used for all evaluation in this task. Type an invoice snippet, press submit, observe the output, copy it verbatim into your evaluation log.
+
+Ablation Study: An experiment where you must remove or vary one component at a time to measure its contribution. Here: comparing the base model (no fine-tuning) vs. the fine-tuned model on the same evaluation set isolates the contribution of fine-tuning to parse success rate.
+
+------
+Detailed Walkthrough
+The fine-tuning runs entirely inside LlamaFactory's Gradio web UI. Evaluation runs inside LlamaFactory's inference tab. No Python application or custom script is written. The intellectual work is in schema design, data curation, and rigorous evaluation.
+Part A — Schema Design
+Before curating a single training example, you must define your JSON output schema precisely. Your schema must cover two document types: (1) invoices and (2) purchase orders. Design each schema carefully — every training example must conform to it exactly.
+
+
+Invoice Schema (Required Keys):
+    vendor (string), invoice_number (string), date (YYYY-MM-DD string),
+    due_date (YYYY-MM-DD string or null), currency (3-letter ISO string),
+    subtotal (float), tax (float or null), total (float),
+    line_items (array of objects, each with: description, quantity, unit_price)
+
+Purchase Order Schema (Required Keys):
+buyer (string), supplier (string), po_number (string), date (YYYY-MM-DD string),
+delivery_date (YYYY-MM-DD string or null), currency (string), total (float),
+items (array of objects, each with: item_name, quantity, unit_price)
+
+Document your final schemas in schema/invoice_schema.md and schema/po_schema.md. For each key, write one sentence explaining: what value it should contain, what format it must follow, and what value it should take when the field is absent in the source document (null vs. "" vs. omitting the key — your choice, but it must be consistent across every example). This schema document is binding — every training example must comply with it exactly.
+
+Part B — Data Curation
+Download the CORD receipt/invoice dataset and the DocumentIE dataset from Hugging Face. Browse both carefully. Your goal is to curate 80 training examples split as: 50 invoices and 30 purchase orders.
+
+For each example, you will:
+
+Take the raw document text from the dataset (or a realistic synthetic variant you write yourself if dataset examples are too uniform).
+Manually write the correct JSON output that exactly matches your schema.
+Verify: is every key present? Are all floats actually floats (not strings)? Is the date in YYYY-MM-DD format? Are null values used consistently?
+Critical Curation Rules:
+
+Every training example must have a unique document layout. If 10 examples all use the same column order and formatting, the model learns that layout — not the general extraction skill.
+Include at least 15 examples where one or more optional fields are absent (missing tax, missing due date). The model must learn to return null for absent fields rather than hallucinating values.
+Include at least 10 examples with multi-item line_items arrays (3+ items each). Single-item invoices are too easy.
+Include 5 examples with currency other than USD (GBP, EUR, INR, JPY). This tests generalisation beyond the most common case.
+Reject any example where you are uncertain about the correct extraction. Ambiguous ground truth is worse than fewer examples.
+Record every decision in data/curation_log.md with columns: example_id, document_type, source (dataset name + record ID), kept_or_rejected, reason, schema_issues_found. This log is a primary deliverable — it must show genuine manual review, not a batch export.
+
+Format all 80 examples as a JSONL file: data/curated_train.jsonl. Each line: {"instruction": "Extract all invoice fields and return ONLY a valid JSON object. No explanation, no markdown, no code fences.", "input": "<raw document text>", "output": "<your manually written JSON>"}.
+
+Part C — Baseline Evaluation
+Before training, establish your baseline. This is what makes the before-vs-after comparison meaningful.
+
+Using LlamaFactory's inference tab (or Open WebUI with llama3.2:3b loaded), design one extraction prompt — the best prompt you can write — and run it against 20 held-out document samples that are NOT in your training set. These 20 documents should be sourced separately and manually verified with ground truth JSON.
+
+For each of the 20 responses, copy the raw model output verbatim into eval/baseline_responses.md. Then for each response, record in eval/baseline_scores.csv:
+
+filename	raw_output_first_50_chars	is_valid_json	has_all_required_keys	key_accuracy (0–1)	value_accuracy (0–1)	notes
+is_valid_json: can json.loads() parse it without error? (test manually using Python's interactive terminal: python3 -c "import json; json.loads(open('response.txt').read())" — one command, not a script).
+
+has_all_required_keys: are all schema-required keys present in the parsed output?
+
+key_accuracy: what fraction of required keys are present and correctly named?
+
+value_accuracy: of the values that are present, what fraction match your ground truth?
+
+Compute aggregate parse success rate = (number of responses where is_valid_json=True AND has_all_required_keys=True) / 20. This is your baseline number. Record it prominently in eval/summary.md.
+
+Part D — Fine-Tuning via LlamaFactory UI
+Install LlamaFactory and launch the Gradio web UI (llamafactory-cli webui). Load Llama-3.2-3B-Instruct. Navigate to the Fine-Tune tab.
+
+Configure the following — and justify every choice in training_config.md before clicking Train:
+
+Dataset: your curated_train.jsonl
+Fine-tuning method: LoRA
+LoRA rank: choose between 8, 16, or 32 — justify your choice based on task complexity and dataset size
+LoRA alpha: standard practice is 2× rank — explain why
+Learning rate: justify your choice (typical range: 1e-4 to 3e-4)
+Epochs: choose 2–5 — justify based on dataset size and overfitting risk
+Batch size: given your hardware, what is the maximum batch size that fits in RAM?
+Before clicking Train, screenshot the full configuration panel: screenshots/training_config.png.
+
+Monitor the loss curve during training. Screenshot it at the end of training: screenshots/loss_curve.png. In training_config.md, describe what you observe: does the loss decrease smoothly? Does it plateau? Does it drop suspiciously fast (potential overfitting)? If you ran training more than once (adjusted hyperparameters), document all runs and why you changed settings between them.
+
+Part E — Post Fine-Tuning Evaluation
+Load your fine-tuned model in LlamaFactory's inference tab. Run the exact same 20 held-out documents from Part C using the exact same prompt. Copy every raw response verbatim into eval/finetuned_responses.md.
+
+Fill in eval/finetuned_scores.csv with the same columns as your baseline CSV. Compute the post-fine-tuning parse success rate.
+
+Build a side-by-side comparison table in eval/before_vs_after.md:
+
+metric	baseline (base model)	post fine-tuning
+parse success rate		
+avg key accuracy		
+avg value accuracy		
+responses with markdown fences		
+responses with prose preamble		
+responses with wrong schema keys		
+Part F — Failure Analysis
+Identify 5 documents where the fine-tuned model still fails (invalid JSON, missing keys, or wrong value types). For each, commit the raw document text, your expected JSON output, and the model's actual response in eval/failures/failure_01.md through failure_05.md. For each failure write:
+
+What went wrong: describe the exact failure mode — was it a formatting issue (code fence, trailing comma), a key naming error, a value type mismatch, or a hallucinated field?
+Why it likely failed: is this document type underrepresented in your training data? Does it have an unusual layout? Is a field ambiguous?
+What training data change would fix it: propose a specific addition or modification to your JSONL dataset — not a prompt change. Fine-tuning failures are data problems, not prompt problems.
+Part G — Prompt Engineering Comparison
+Take your 3 worst-performing baseline documents (from Part C) and try to fix the base model's output using prompt engineering alone — no fine-tuning. Iterate through at least 3 prompt versions (few-shot examples, stricter format instructions, explicit "do not use markdown" constraints). Record all prompt versions in prompts/prompt_iterations.md and the results for each in prompts/prompt_eval.md.
+
+Compare your best prompt-only parse success rate on these 3 documents against your fine-tuned model's performance on the same 3. Write a 300-word analysis in report.md section "Prompting vs. Fine-Tuning": under what conditions does each approach win? What does this tell you about when to reach for fine-tuning vs. prompt engineering in a production context?
+
+Datasets
+Dataset	What to use it for	Link
+CORD v2 (Clova OCR Receipt Dataset)	Invoice and receipt text + structured ground truth — primary source	HuggingFace — naver-clova-ix/cord-v2
+SROIE (Scanned Receipts OCR and IE)	Scanned receipt text with key-value ground truth (vendor, date, total)	HuggingFace — AdamCodd/sroie2019
+DocVQA	Diverse business document images with Q&A pairs — useful for sourcing varied document layouts	HuggingFace — nielsr/docvqa_1200_examples
+Purchase Order Synthetic Dataset	Synthetic PO records with structured fields — use for the PO half of your training set	HuggingFace — katanaml-org/invoices-donut-data-v1
+Free / OSS Alternatives
+Hugging Face AutoTrain (cloud-based no-code fine-tuning UI, free tier available), Unsloth Colab Notebooks (pre-written notebooks, change only dataset path), Axolotl with YAML config (fine-tuning via config file, minimal code), Open WebUI (evaluation interface alternative to LlamaFactory inference tab).
+
+Core Requirements
+1.
+You must define and document the JSON schemas for two document types: invoices and purchase orders. These schemas will serve as the ground truth for all data curation and evaluation.
+
+Deliverables
+schema/invoice_schema.md: A markdown file defining the schema for invoices. It must specify all required keys, their data types, and the consistent handling of optional or absent fields (e.g., using null).
+schema/po_schema.md: A markdown file defining the schema for purchase orders, following the same documentation requirements as the invoice schema.
+2.
+You must curate a high-quality training dataset of 80 examples (50 invoices, 30 purchase orders) formatted as a JSONL file. This includes a detailed log of your curation process.
+
+Deliverables
+data/curated_train.jsonl: A JSONL file containing exactly 80 training examples. Each line must be a valid JSON object with instruction, input (raw document text), and output (the ground truth JSON object conforming to your schema).
+data/curation_log.md: A markdown file logging the review of each potential training example. It must detail the source, whether it was kept or rejected, and the reasoning, especially regarding schema compliance and data diversity.
+3.
+You must establish a performance baseline for the pre-trained Llama 3.2 model on a held-out test set of 20 documents. This involves documenting the raw outputs and scoring them against your ground truth.
+
+Deliverables
+eval/baseline_responses.md: Contains the verbatim, raw output from the base model for each of the 20 evaluation documents.
+eval/baseline_scores.csv: A CSV file with a row for each evaluation document, scoring the response on is_valid_json, has_all_required_keys, key_accuracy, and value_accuracy.
+eval/summary.md: A summary file that prominently states the calculated baseline parse success rate.
+4.
+You must fine-tune the Llama 3.2 model using LlamaFactory's web UI with the LoRA method. Your configuration choices must be documented and justified.
+
+Deliverables
+training_config.md: A markdown file detailing every hyperparameter choice (LoRA rank, alpha, learning rate, epochs, etc.) with a clear justification for each.
+screenshots/training_config.png: A screenshot of the LlamaFactory configuration panel before starting the training run.
+screenshots/loss_curve.png: A screenshot of the training loss curve upon completion of the fine-tuning process.
+5.
+After fine-tuning, you must evaluate your model on the same 20 held-out documents to measure performance improvement. This includes a comparative analysis.
+
+Deliverables
+eval/finetuned_responses.md: Contains the verbatim, raw output from your fine-tuned model for each of the 20 evaluation documents.
+eval/finetuned_scores.csv: A CSV file scoring the fine-tuned model's responses using the same format as the baseline evaluation.
+eval/before_vs_after.md: A markdown file with a side-by-side comparison table showing key metrics (parse success rate, accuracy, failure modes) for the baseline vs. the fine-tuned model.
+6.
+You must perform a detailed failure analysis on 5 examples where the fine-tuned model still failed to produce the correct structured output.
+
+Deliverables
+eval/failures/failure_01.md to eval/failures/failure_05.md: Five separate markdown files. Each file must contain the source document text, the expected JSON, the model's incorrect output, and a structured analysis of what went wrong, why it likely failed, and a specific data-centric proposal to fix it.
+7.
+You must conduct an experiment to compare the effectiveness of prompt engineering against fine-tuning for improving structured output on a small subset of difficult examples.
+
+Deliverables
+prompts/prompt_iterations.md: A file documenting at least three distinct prompt versions you engineered to improve the base model's performance.
+prompts/prompt_eval.md: A file showing the results of your prompt engineering efforts on the 3 worst-performing baseline documents.
+report.md: A final report containing a ~300-word analysis summarizing your findings on when to use prompt engineering versus fine-tuning in a production context.
