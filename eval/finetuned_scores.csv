@@ -1,18 +1,18 @@
 filename,raw_output_first_50_chars,is_valid_json,has_all_required_keys,key_accuracy,value_accuracy,notes
 doc_01.txt,"{\"vendor\": \"Acme\", \"invoice_number\": \"123\", ",True,True,1.0,1.0,Perfect extraction
 doc_02.txt,"{\"vendor\": \"Tech\", \"invoice_number\": \"102\", ",True,True,1.0,1.0,Perfect extraction
-doc_03.txt,"{\"buyer\": \"Global\", \"supplier\": \"FastParts\",",True,True,1.0,1.0,Perfect extraction
+doc_03.txt,"{\"buyer\": \"Global\", \"supplier\": \"FastParts\",",True,False,0.9,1.0,Missed items array completely
 doc_04.txt,"{\"vendor\": \"Bob\", \"invoice_number\": \"001\",",True,True,1.0,1.0,Perfect extraction
 doc_05.txt,"{\"buyer\": \"StartupX\", \"supplier\": \"Office\", ",True,True,1.0,1.0,Perfect extraction
 doc_06.txt,"{\"vendor\": \"XYZ\", \"invoice_number\": \"888\",",True,True,1.0,1.0,Perfect extraction
-doc_07.txt,"{\"vendor\": \"Corp\", \"invoice_number\": \"999\",",True,True,1.0,1.0,Perfect extraction
+doc_07.txt,"{\"vendor\": \"Corp\", \"invoice_number\": \"999\",",True,True,1.0,0.5,Date format MM/DD/YYYY instead of YYYY-MM-DD
 doc_08.txt,"{\"vendor\": \"Corp\", \"invoice_number\": \"123\", ",True,True,1.0,1.0,Perfect extraction
 doc_09.txt,"{\"buyer\": \"A\", \"supplier\": \"B\", \"po_number\"",True,True,1.0,1.0,Perfect extraction
 doc_10.txt,"{\"vendor\": \"Test\", \"invoice_number\": \"444\", ",True,True,1.0,1.0,Perfect extraction
 doc_11.txt,"{\"vendor\": \"Acme\", \"invoice_number\": \"444\", ",True,True,1.0,1.0,Perfect extraction
-doc_12.txt,"{\"buyer\": \"Corp\", \"supplier\": \"Inc\", \"po_num",True,True,1.0,1.0,Perfect extraction
+doc_12.txt,"{\"buyer\": \"Corp\", \"supplier\": \"Inc\", \"po_num",True,True,1.0,0.8,Total is string instead of float
 doc_13.txt,"{\"vendor\": \"Foo\", \"invoice_number\": \"555\", ",True,True,1.0,1.0,Perfect extraction
-doc_14.txt,"{\"buyer\": \"Bar\", \"supplier\": \"Baz\", \"po_num\"",True,True,1.0,1.0,Perfect extraction
+doc_14.txt,"{\"buyer\": \"Bar\", \"supplier\": \"Baz\", \"po_num\"",True,False,0.8,1.0,Hallucinated tax field on PO
 doc_15.txt,"{\"vendor\": \"Acme\", \"invoice_number\": \"666\", ",True,True,1.0,1.0,Perfect extraction
 doc_16.txt,"{\"vendor\": \"Test\", \"invoice_number\": \"777\", ",True,True,1.0,1.0,Perfect extraction
 doc_17.txt,"{\"buyer\": \"A\", \"supplier\": \"B\", \"po_number\"",True,True,1.0,1.0,Perfect extraction
