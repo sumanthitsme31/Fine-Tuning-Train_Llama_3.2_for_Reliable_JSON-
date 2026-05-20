@@ -1,1 +1,21 @@
 filename,raw_output_first_50_chars,is_valid_json,has_all_required_keys,key_accuracy,value_accuracy,notes
+doc_01.txt,"```json {\"vendor\": \"Acme\", \"invoice_number\": ",False,False,0.9,0.9,Markdown fences
+doc_02.txt,"Here is the extracted data: {\"vendor\": \"Tech\"",False,False,0.9,0.8,Prose preamble
+doc_03.txt,"{\"buyer\": \"Global\", \"supplier\": \"FastParts\",",True,False,0.8,0.9,Missing delivery_date key
+doc_04.txt,"{\"vendor\": \"Bob\", \"invoice_number\": \"001\",",True,True,1.0,1.0,Perfect extraction
+doc_05.txt,"{\"buyer\": \"StartupX\", \"supplier\": \"Office\", ",True,True,1.0,0.9,Extracted wrong total
+doc_06.txt,"```json {\"vendor\": \"XYZ\", \"date\": \"2024-01-",False,False,0.7,0.8,Markdown fences
+doc_07.txt,"{\"invoice_number\": \"999\", \"date\": \"01/01/24\"",True,False,0.8,0.5,Date format wrong
+doc_08.txt,"{\"vendor\": \"Corp\", \"invoice_number\": \"123\", ",True,True,1.0,1.0,Perfect extraction
+doc_09.txt,"The JSON is: {\"buyer\": \"A\", \"supplier\": \"B\"",False,False,1.0,1.0,Prose preamble
+doc_10.txt,"{\"vendor\": \"Test\", \"subtotal\": 100, \"total\":",True,False,0.6,1.0,Missing multiple keys
+doc_11.txt,"{\"vendor\": \"Acme\", \"invoice_number\": \"444\", ",True,True,1.0,1.0,Perfect extraction
+doc_12.txt,"```json {\"buyer\": \"Corp\", \"supplier\": \"Inc\"",False,False,1.0,1.0,Markdown fences
+doc_13.txt,"{\"vendor\": \"Foo\", \"invoice_number\": \"555\", ",True,True,1.0,1.0,Perfect extraction
+doc_14.txt,"{\"buyer\": \"Bar\", \"supplier\": \"Baz\", \"total\"",True,False,0.7,0.8,Missing items array
+doc_15.txt,"Here is the data: ```json {\"vendor\": \"Acme\"",False,False,1.0,1.0,Prose and markdown
+doc_16.txt,"{\"vendor\": \"Test\", \"invoice_number\": \"777\", ",True,True,1.0,1.0,Perfect extraction
+doc_17.txt,"{\"buyer\": \"A\", \"supplier\": \"B\", \"po_number\"",True,True,1.0,1.0,Perfect extraction
+doc_18.txt,"```json {\"vendor\": \"Acme\", \"invoice_number\": ",False,False,0.9,0.9,Markdown fences
+doc_19.txt,"{\"vendor\": \"Test\", \"invoice_number\": \"999\", ",True,True,1.0,0.8,Wrong total value
+doc_20.txt,"{\"buyer\": \"C\", \"supplier\": \"D\", \"po_number\"",True,False,0.8,1.0,Missing currency key
