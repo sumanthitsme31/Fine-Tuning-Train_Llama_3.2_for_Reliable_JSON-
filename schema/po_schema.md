@@ -1,18 +1,11 @@
 # Purchase Order Schema
-Defines the structure for extracting data from purchase orders.
 
-| Key | Type | Description | Format |
-| :--- | :--- | :--- | :--- |
-| **buyer** | string | Entity purchasing the goods. | Plain text. |
-| **supplier** | string | Entity providing the goods. | Plain text. |
-| **po_number** | string | Unique PO identifier. | Alpha-numeric. |
-| **date** | string | Date the PO was created. | YYYY-MM-DD |
-| **delivery_date** | string/null | Expected delivery date. | YYYY-MM-DD or null. |
-| **currency** | string | Currency for the transaction. | ISO 4217 code. |
-| **total** | float | Total value of the order. | Float. |
-| **items** | array | List of items being ordered. | Array of objects. |
-
-**items object:**
-- `item_name` (string): Name of the product.
-- `quantity` (integer): Number of units.
-- `unit_price` (float): Price per unit.
+**Required Keys:**
+* `buyer` (string): The name of the entity purchasing the goods/services.
+* `supplier` (string): The name of the entity supplying the goods/services.
+* `po_number` (string): The unique purchase order identifier.
+* `date` (string): The date the PO was created, formatted as YYYY-MM-DD.
+* `delivery_date` (string or null): The expected delivery date (YYYY-MM-DD). Null if absent.
+* `currency` (string): 3-letter ISO currency code (e.g., USD, EUR).
+* `total` (float): The total value of the purchase order.
+* `items` (array of objects): Each object must contain `item_name` (string), `quantity` (float/int), and `unit_price` (float).

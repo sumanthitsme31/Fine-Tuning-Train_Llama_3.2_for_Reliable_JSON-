@@ -1,0 +1,1 @@
+{"instruction": "Extract all fields and return ONLY a valid JSON object. No explanation, no markdown, no code blocks.", "input": "Sample document text here...", "output": "{}"}
